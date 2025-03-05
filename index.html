@@ -71,13 +71,25 @@ function Rig() {
   this.x = canvas.width/2;
   this.y = canvas.height/2;
   
-  this.arm1 = new Limb(this.x + 3, this.y - 30, 30, 40, true);
-  this.arm2 = new Limb(this.x - 3, this.y - 30, 30, 40, true);
+  this.arm1 = new Limb(this.x, this.y - 30, 30, 40, true);
+  this.arm2 = new Limb(this.x, this.y - 30, 30, 40, true);
   
-  this.leg1 = new Limb(this.x + 3, this.y + 40, 40, 45, false);
-  this.leg2 = new Limb(this.x - 3, this.y + 40, 40, 45, false);
+  this.leg1 = new Limb(this.x, this.y + 40, 40, 45, false);
+  this.leg2 = new Limb(this.x, this.y + 40, 40, 45, false);
   
   this.walkCycle = 0;
+}
+Rig.prototype.move = function(x, y) {
+  this.x+=x;
+  this.y+=y;
+  this.arm1.x+=x;
+  this.arm1.y+=y;
+  this.arm2.x+=x;
+  this.arm2.y+=y;
+  this.leg1.x+=x;
+  this.leg1.y+=y;
+  this.leg2.x+=x;
+  this.leg2.y+=y;
 }
 Rig.prototype.update = function() {
   this.arm1.draw();
@@ -85,12 +97,19 @@ Rig.prototype.update = function() {
   this.leg1.draw();
   this.leg2.draw();
   
-  this.arm1.update(this.x + 25 + Math.cos(this.walkCycle % 180) * 15, this.y + 20 + Math.sin((this.walkCycle - 180) % 180) * 10);
-  this.arm2.update(this.x + 25 + Math.cos((this.walkCycle - 180) % 180) * 15, this.y + 20 + Math.sin((this.walkCycle - 180) % 180) * 10)
+  this.arm1.update(this.x + 20 + Math.cos(this.walkCycle % 180) * 25, this.y + 10 + Math.sin((this.walkCycle - 180) % 180) * 10);
+  this.arm2.update(this.x + 20 + Math.cos((this.walkCycle - 180) % 180) * 25, this.y + 10 + Math.sin((this.walkCycle - 180) % 180) * 10)
   
   this.leg1.update(this.x + Math.cos(this.walkCycle - 180) * 30, this.y + 115 + Math.sin(this.walkCycle - 180) * 20);
   this.leg2.update(this.x + Math.cos(this.walkCycle) * 30, this.y + 115 + Math.sin(this.walkCycle) * 20);
   
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(this.x, this.y - 40);
+  ctx.lineTo(this.x, this.y + 43);
+  ctx.stroke();
+  this.move(-0.5, 0)
   this.walkCycle+=0.05;
 }
 
