@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IK Arm Follow Mouse</title>
     <style>
-        body { margin: 0; padding: 0; }
-        canvas { background-color: #f0f0f0; display: block; }
+        body {
+        	margin: 0;
+            padding: 0;
+        }
     </style>
 </head>
 <body>
@@ -16,58 +18,89 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+var cRect = canvas.getBoundingClientRect();
+let mouseX = 0;
+let mouseY = 0;
+canvas.addEventListener("mousemove", function(e) {
+  mouseX = Math.round(e.clientX - cRect.left);
+  mouseY = Math.round(e.clientY - cRect.top);
+});
 
-class Limb {
-    constructor(x, y, length1, length2) {
-        this.x = x;
-        this.y = y;
-        this.length1 = length1;
-        this.length2 = length2;
-        this.angle1 = 0;
-        this.angle2 = 0;
-    }
-    
-    update(targetX, targetY) {
-        let dx = targetX - this.x;
-        let dy = targetY - this.y;
-        let dist = Math.sqrt(dx * dx + dy * dy);
-        
-        // Clamp distance to be within the reach of the limb
-        dist = Math.min(dist, this.length1 + this.length2);
-        
-        let angleA = Math.acos((this.length1**2 + this.length2**2 - dist**2) / (2 * this.length1 * this.length2));
-        let angleB = Math.atan2(dy, dx) - Math.acos((this.length1**2 + dist**2 - this.length2**2) / (2 * this.length1 * dist));
-        
-        this.angle1 = angleB;
-        this.angle2 = angleA;
-    }
-    
-    draw() {
-        let x1 = this.x + Math.cos(this.angle1) * this.length1;
-        let y1 = this.y + Math.sin(this.angle1) * this.length1;
-        let x2 = x1 + Math.cos(this.angle1 + this.angle2) * this.length2;
-        let y2 = y1 + Math.sin(this.angle1 + this.angle2) * this.length2;
-        
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-    }
+function Limb(x, y, length1, length2, reverse) {
+  this.x = x;
+  this.y = y;
+  this.length1 = length1;
+  this.length2 = length2;
+  this.reverse = reverse;
+  this.angle1 = 0;
+	this.angle2 = 0;
+}
+Limb.prototype.update = function(targetX, targetY) {
+	let dx = targetX - this.x;
+	let dy = targetY - this.y;
+  let dist = Math.sqrt(dx * dx + dy * dy);
+
+  dist = Math.min(dist, this.length1 + this.length2);
+  let angleB;
+  if(this.reverse) {
+    angleB = Math.atan2(dy, dx) + Math.acos((this.length1**2 + dist**2 -     	 this.length2**2) / (2 * this.length1 * dist));
+  } else {
+    angleB = Math.atan2(dy, dx) - Math.acos((this.length1**2 + dist**2 -     	 this.length2**2) / (2 * this.length1 * dist));
+  }
+  let angleA = Math.atan2(targetY - (this.y + Math.sin(this.angle1) * this.length1), targetX - (this.x + Math.cos(this.angle1) * this.length1));
+
+	this.angle1 = angleB;
+	this.angle2 = angleA;
+}
+Limb.prototype.draw = function() {
+  let x1 = this.x + Math.cos(this.angle1) * this.length1;
+  let y1 = this.y + Math.sin(this.angle1) * this.length1;
+  let x2 = x1 + Math.cos(this.angle2) * this.length2;
+  let y2 = y1 + Math.sin(this.angle2) * this.length2;
+
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(this.x, this.y);
+  ctx.lineTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+};
+
+function Rig() {
+  this.x = canvas.width/2;
+  this.y = canvas.height/2;
+  
+  this.arm1 = new Limb(this.x + 3, this.y - 30, 30, 40, true);
+  this.arm2 = new Limb(this.x - 3, this.y - 30, 30, 40, true);
+  
+  this.leg1 = new Limb(this.x + 3, this.y + 40, 40, 45, false);
+  this.leg2 = new Limb(this.x - 3, this.y + 40, 40, 45, false);
+  
+  this.walkCycle = 0;
+}
+Rig.prototype.update = function() {
+  this.arm1.draw();
+  this.arm2.draw();
+  this.leg1.draw();
+  this.leg2.draw();
+  
+  this.arm1.update(this.x + 25 + Math.cos(this.walkCycle % 180) * 15, this.y + 20 + Math.sin((this.walkCycle - 180) % 180) * 10);
+  this.arm2.update(this.x + 25 + Math.cos((this.walkCycle - 180) % 180) * 15, this.y + 20 + Math.sin((this.walkCycle - 180) % 180) * 10)
+  
+  this.leg1.update(this.x + Math.cos(this.walkCycle - 180) * 30, this.y + 115 + Math.sin(this.walkCycle - 180) * 20);
+  this.leg2.update(this.x + Math.cos(this.walkCycle) * 30, this.y + 115 + Math.sin(this.walkCycle) * 20);
+  
+  this.walkCycle+=0.05;
 }
 
-const limb = new Limb(canvas.width / 2, canvas.height / 2, 100, 80);
+let rig = new Rig();
 
-function animate(event) {
+setInterval(function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    limb.update(event.clientX, event.clientY);
-    limb.draw();
-    requestAnimationFrame(animate);
-}
+    rig.update();
+}, 10);
 
-canvas.addEventListener("mousemove", animate);
 
 </script>
 </body>
