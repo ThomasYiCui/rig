@@ -12,96 +12,63 @@
 <body>
 <canvas id="canvas"></canvas>
 <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-    // Parameters for the arm
-    const upperArmLength = 100;
-    const lowerArmLength = 100;
-
-    let upperArmAngle = 0;
-    let lowerArmAngle = 0;
+class Limb {
+    constructor(x, y, length1, length2) {
+        this.x = x;
+        this.y = y;
+        this.length1 = length1;
+        this.length2 = length2;
+        this.angle1 = 0;
+        this.angle2 = 0;
+    }
     
-    // Arm joints positions
-    let shoulderX = canvas.width / 2;
-    let shoulderY = canvas.height / 2;
-
-    // Calculate the angles using inverse kinematics
-    function calculateAngles(targetX, targetY) {
-        const dx = targetX - shoulderX;
-        const dy = targetY - shoulderY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+    update(targetX, targetY) {
+        let dx = targetX - this.x;
+        let dy = targetY - this.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance > upperArmLength + lowerArmLength) {
-            // If the target is too far, limit it to the max distance
-            const angle = Math.atan2(dy, dx);
-            return { upperArmAngle: angle, lowerArmAngle: 0 };
-        }
-
-        const angleToTarget = Math.atan2(dy, dx);
-        const cosAngle = (distance * distance - upperArmLength * upperArmLength - lowerArmLength * lowerArmLength) / (2 * upperArmLength * lowerArmLength);
-        const angleBetweenArms = Math.acos(Math.min(Math.max(cosAngle, -1), 1));  // Clamp value to prevent NaN
-
-        const upperArmAngle = Math.atan2(dy, dx) - Math.atan2(lowerArmLength * Math.sin(angleBetweenArms), upperArmLength + lowerArmLength * Math.cos(angleBetweenArms));
-        const lowerArmAngle = Math.PI - angleBetweenArms;
-
-        return { upperArmAngle, lowerArmAngle };
+        // Clamp distance to be within the reach of the limb
+        dist = Math.min(dist, this.length1 + this.length2);
+        
+        let angleA = Math.acos((this.length1**2 + this.length2**2 - dist**2) / (2 * this.length1 * this.length2));
+        let angleB = Math.atan2(dy, dx) - Math.acos((this.length1**2 + dist**2 - this.length2**2) / (2 * this.length1 * dist));
+        
+        this.angle1 = angleB;
+        this.angle2 = angleA;
     }
-
-    // Update the position of the arm based on the mouse position
-    function updateArmPosition(mouseX, mouseY) {
-        const { upperArmAngle, lowerArmAngle } = calculateAngles(mouseX, mouseY);
-
-        // Draw the arm
-        const upperArmEndX = shoulderX + upperArmLength * Math.cos(upperArmAngle);
-        const upperArmEndY = shoulderY + upperArmLength * Math.sin(upperArmAngle);
-
-        const lowerArmEndX = upperArmEndX + lowerArmLength * Math.cos(upperArmAngle + lowerArmAngle);
-        const lowerArmEndY = upperArmEndY + lowerArmLength * Math.sin(upperArmAngle + lowerArmAngle);
-
-        // Clear canvas and redraw the arm
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw shoulder
-        ctx.beginPath();
-        ctx.arc(shoulderX, shoulderY, 5, 0, Math.PI * 2);
-        ctx.fillStyle = 'black';
-        ctx.fill();
-
-        // Draw upper arm
-        ctx.beginPath();
-        ctx.moveTo(shoulderX, shoulderY);
-        ctx.lineTo(upperArmEndX, upperArmEndY);
-        ctx.strokeStyle = 'blue';
+    
+    draw() {
+        let x1 = this.x + Math.cos(this.angle1) * this.length1;
+        let y1 = this.y + Math.sin(this.angle1) * this.length1;
+        let x2 = x1 + Math.cos(this.angle1 + this.angle2) * this.length2;
+        let y2 = y1 + Math.sin(this.angle1 + this.angle2) * this.length2;
+        
+        ctx.strokeStyle = "black";
         ctx.lineWidth = 5;
-        ctx.stroke();
-
-        // Draw lower arm
         ctx.beginPath();
-        ctx.moveTo(upperArmEndX, upperArmEndY);
-        ctx.lineTo(lowerArmEndX, lowerArmEndY);
-        ctx.strokeStyle = 'green';
-        ctx.lineWidth = 5;
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
-
-        // Draw hand (end of lower arm)
-        ctx.beginPath();
-        ctx.arc(lowerArmEndX, lowerArmEndY, 5, 0, Math.PI * 2);
-        ctx.fillStyle = 'red';
-        ctx.fill();
     }
+}
 
-    // Update the arm position based on mouse movements
-    canvas.addEventListener('mousemove', (event) => {
-        const mouseX = event.clientX;
-        const mouseY = event.clientY;
-        updateArmPosition(mouseX, mouseY);
-    });
+const limb = new Limb(canvas.width / 2, canvas.height / 2, 100, 80);
 
-    // Initial arm position
-    updateArmPosition(canvas.width / 2, canvas.height / 2);
+function animate(event) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    limb.update(event.clientX, event.clientY);
+    limb.draw();
+    requestAnimationFrame(animate);
+}
+
+canvas.addEventListener("mousemove", animate);
+
 </script>
 </body>
 </html>
