@@ -21,10 +21,28 @@ canvas.height = window.innerHeight;
 var cRect = canvas.getBoundingClientRect();
 let mouseX = 0;
 let mouseY = 0;
+let keys = [];
+let timing = 0;
 canvas.addEventListener("mousemove", function(e) {
   mouseX = Math.round(e.clientX - cRect.left);
   mouseY = Math.round(e.clientY - cRect.top);
 });
+function keysPressed(e) {
+    keys[e.keyCode] = true;
+    e.preventDefault();
+}
+function keysReleased(e) {
+    keys[e.keyCode] = false;
+}
+window.addEventListener("keydown", keysPressed, false);
+window.addEventListener("keyup", keysReleased, false);
+
+function getPos(x, y, r) {
+  return {
+    x: x * Math.cos(r) + y * Math.cos(r + Math.PI/2),
+    y: x * Math.sin(r) + y * Math.sin(r + Math.PI/2),
+  };
+}
 
 function Limb(x, y, length1, length2, reverse) {
   this.x = x;
@@ -34,6 +52,7 @@ function Limb(x, y, length1, length2, reverse) {
   this.reverse = reverse;
   this.angle1 = 0;
 	this.angle2 = 0;
+	this.target = null;
 }
 Limb.prototype.update = function(targetX, targetY) {
 	let dx = targetX - this.x;
@@ -71,13 +90,14 @@ function Rig() {
   this.x = canvas.width/2;
   this.y = canvas.height/2;
   
-  this.arm1 = new Limb(this.x, this.y - 30, 30, 40, true);
-  this.arm2 = new Limb(this.x, this.y - 30, 30, 40, true);
+  this.arm1 = new Limb(this.x, this.y - 30, 30, 40, true, 1);
+  this.arm2 = new Limb(this.x, this.y - 30, 30, 40, true, 1);
   
-  this.leg1 = new Limb(this.x, this.y + 40, 40, 45, false);
-  this.leg2 = new Limb(this.x, this.y + 40, 40, 45, false);
+  this.leg1 = new Limb(this.x, this.y + 40, 40, 45, false, 1);
+  this.leg2 = new Limb(this.x, this.y + 40, 40, 45, false, 1);
   
-  this.walkCycle = 0;
+  this.walkCycle = 180;
+  this.face = 0.1;
 }
 Rig.prototype.move = function(x, y) {
   this.x+=x;
@@ -91,33 +111,137 @@ Rig.prototype.move = function(x, y) {
   this.leg2.x+=x;
   this.leg2.y+=y;
 }
+
 Rig.prototype.update = function() {
   this.arm1.draw();
   this.arm2.draw();
   this.leg1.draw();
   this.leg2.draw();
   
-  this.arm1.update(this.x + 20 + Math.cos(this.walkCycle % 180) * 25, this.y + 10 + Math.sin((this.walkCycle - 180) % 180) * 10);
-  this.arm2.update(this.x + 20 + Math.cos((this.walkCycle - 180) % 180) * 25, this.y + 10 + Math.sin((this.walkCycle - 180) % 180) * 10)
+  if(this.face === 1) {
+    this.arm1.update(this.x + 20 + Math.cos(this.walkCycle) * 15, this.y + 30 + Math.sin((this.walkCycle - 180)) * 10);
+    this.arm2.update(this.x + 20 + Math.cos((this.walkCycle - 180)) * 15, this.y + 30 + Math.sin((this.walkCycle - 180)) * 10)
   
-  this.leg1.update(this.x + Math.cos(this.walkCycle - 180) * 30, this.y + 115 + Math.sin(this.walkCycle - 180) * 20);
-  this.leg2.update(this.x + Math.cos(this.walkCycle) * 30, this.y + 115 + Math.sin(this.walkCycle) * 20);
+    this.leg1.update(this.x + Math.cos(this.walkCycle - 180) * 30, this.y + 115 + Math.sin(this.walkCycle - 180) * 10);
+    this.leg2.update(this.x + Math.cos(this.walkCycle) * 30, this.y + 115 + Math.sin(this.walkCycle) * 10);
+  } else if(this.face === -1){
+    this.arm1.update(this.x - 20 + Math.cos(this.walkCycle) * 15, this.y + 30 + Math.sin((this.walkCycle - 180)) * 10);
+    this.arm2.update(this.x - 20 + Math.cos((this.walkCycle - 180)) * 15, this.y + 30 + Math.sin((this.walkCycle - 180)) * 10)
   
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.moveTo(this.x, this.y - 40);
-  ctx.lineTo(this.x, this.y + 43);
-  ctx.stroke();
-  this.move(-0.5, 0)
-  this.walkCycle+=0.05;
+    this.leg1.update(this.x + Math.cos(this.walkCycle - 180) * 30, this.y + 115 + Math.sin(this.walkCycle - 180) * 10);
+    this.leg2.update(this.x + Math.cos(this.walkCycle) * 30, this.y + 115 + Math.sin(this.walkCycle) * 10);
+  } else if(this.face === -0.1) {
+    this.arm1.update(this.x - 20, this.y + 30);
+    this.arm2.update(this.x - 10, this.y + 30)
+  
+    this.leg1.update(this.x - 15, this.y + 125);
+    this.leg2.update(this.x + 15, this.y + 125);
+  } else if(this.face === 0.1) {
+    this.arm1.update(this.x + 20, this.y + 30);
+    this.arm2.update(this.x + 10, this.y + 30)
+  
+    this.leg1.update(this.x - 15, this.y + 125);
+    this.leg2.update(this.x + 15, this.y + 125);
+  }
+  if(this.face < 0) {
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(this.x - 5, this.y - 40);
+    ctx.lineTo(this.x, this.y + 43);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(this.x - 7, this.y - 60, 20, 0, 2 * Math.PI);
+    ctx.stroke();
+    this.arm1.x = this.x - 5;
+    this.arm2.x = this.x - 5;
+  } else {
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(this.x + 5, this.y - 40);
+    ctx.lineTo(this.x, this.y + 43);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(this.x + 7, this.y - 60, 20, 0, 2 * Math.PI);
+    ctx.stroke();
+    this.arm1.x = this.x + 5;
+    this.arm2.x = this.x + 5;
+  }
+}
+Rig.prototype.AI = function() {
+  if(!this.target) {
+    return;
+  }
+  if(this.target.x < this.x - 100) {
+    this.move(-2, 0)
+    this.walkCycle-=0.1;
+    this.face = -1;
+    this.arm1.reverse = false;
+    this.arm2.reverse = false;
+    this.leg1.reverse = true;
+    this.leg2.reverse = true;
+  } else if(this.target.x > this.x + 100) {
+    this.move(2, 0)
+    this.walkCycle+=0.1;
+    this.face = 1;
+    this.arm1.reverse = true;
+    this.arm2.reverse = true;
+    this.leg1.reverse = false;
+    this.leg2.reverse = false;
+  } else {
+    if(this.face > 0) {
+      this.face = 0.1;
+    } else {
+      this.face = -0.1
+    }
+    this.walkCycle = 0;
+  }
+}
+Rig.prototype.keyControl = function() {
+  if(keys[65]) {
+    this.move(-2, 0)
+    this.walkCycle-=0.1;
+    this.face = -1;
+    this.arm1.reverse = false;
+    this.arm2.reverse = false;
+    this.leg1.reverse = true;
+    this.leg2.reverse = true;
+  } else if(keys[68]) {
+    this.move(2, 0)
+    this.walkCycle+=0.1;
+    this.face = 1;
+    this.arm1.reverse = true;
+    this.arm2.reverse = true;
+    this.leg1.reverse = false;
+    this.leg2.reverse = false;
+  } else {
+    if(this.face > 0) {
+      this.face = 0.1;
+    } else {
+      this.face = -0.1
+    }
+    this.walkCycle = 0;
+  }
 }
 
 let rig = new Rig();
+let rig2 = new Rig();
+rig2.target = rig;
+rig2.move(-100, 0);
 
 setInterval(function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    rig.update();
+    if(timing <= 100) {
+      ctx.fillStyle = "rgb(34, 204, 4)"
+      ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+    } else {
+      rig.update();
+      rig.keyControl();
+      rig2.update();
+      rig2.AI();
+    }
+    timing+=1;
 }, 10);
 
 
