@@ -212,7 +212,7 @@ Rig.prototype.keyControl = function() {
   }
 }
 
-let timings = [0]
+let timings = [10000000]
 
 let rigs = [];
 for(let i = 0; i < 8; i++) {
@@ -224,14 +224,66 @@ for(let i = 0; i < 8; i++) {
 function forest() {
 	
 }
+function grass() {
+  
+}
+function tree(x, y, s) {
+  ctx.fillStyle = "rgb(158, 87, 5)"
+  ctx.fillRect(x - 10 * s, y, 20 * s, 30 * s);
+  ctx.fillStyle = "rgb(5, 173, 25)"
+  ctx.beginPath();
+  ctx.moveTo(x, y - 100 * s);
+  ctx.lineTo(x - 50 * s, y);
+  ctx.lineTo(x + 50 * s, y);
+  ctx.fill();
+}
+function troy() {
+  // ground + sky
+  ctx.fillStyle = "rgb(93, 226, 231)"
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgb(34, 204, 4)"
+  ctx.fillRect(0, canvas.height - 300, canvas.width, 300);
+  
+  // castle walls
+  ctx.fillStyle = "rgb(200, 200, 200)"
+  ctx.fillRect(0, canvas.height - 500, canvas.width, 200);
+  ctx.fillStyle = "rgb(180, 180, 180)"
+  for(let x = 0; x < canvas.width; x+=50) {
+    ctx.fillRect(x, canvas.height - 515, 25, 15);
+  }
+  
+  // platform
+  ctx.fillStyle = "rgb(170, 170, 170)"
+  ctx.beginPath();
+  ctx.moveTo(canvas.width/2 - 100, canvas.height - 200);
+  ctx.lineTo(canvas.width/2 - 170, canvas.height - 100);
+  ctx.lineTo(canvas.width/2 + 50, canvas.height - 100);
+  ctx.lineTo(canvas.width/2 + 100, canvas.height - 200);
+  ctx.fill();
+  ctx.fillStyle = "rgb(150, 150, 150)"
+  ctx.beginPath();
+  ctx.moveTo(canvas.width/2 + 50, canvas.height - 100);
+  ctx.lineTo(canvas.width/2 - 170, canvas.height - 100);
+  ctx.lineTo(canvas.width/2 - 170, canvas.height - 50);
+  ctx.lineTo(canvas.width/2 + 50, canvas.height - 50);
+  ctx.fill();
+  ctx.fillStyle = "rgb(160, 160, 160)"
+  ctx.beginPath();
+  ctx.moveTo(canvas.width/2 + 100, canvas.height - 200);
+  ctx.lineTo(canvas.width/2 + 50, canvas.height - 100);
+  ctx.lineTo(canvas.width/2 + 50, canvas.height - 50);
+  ctx.lineTo(canvas.width/2 + 100, canvas.height - 150);
+  ctx.fill();
+  
+  // trees
+  tree(100, canvas.height - 280, 1);
+  tree(canvas.width - 90, canvas.height - 325, 0.8);
+}
 
 setInterval(function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if(timing <= timings[0]) {
-      	ctx.fillStyle = "rgb(93, 226, 231)"
-      	ctx.fillRect(0, 0, canvas.width, canvas.height);
-    	ctx.fillStyle = "rgb(34, 204, 4)"
-      	ctx.fillRect(0, canvas.height - 300, canvas.width, 300);
+      	troy();
     } else {
     	ctx.fillStyle = "rgb(93, 226, 231)"
       	ctx.fillRect(0, 0, canvas.width, canvas.height);
