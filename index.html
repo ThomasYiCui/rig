@@ -82,9 +82,6 @@ Limb.prototype.draw = function() {
   let y1 = this.y + Math.sin(this.angle1) * this.length1;
   let x2 = x1 + Math.cos(this.angle2) * this.length2;
   let y2 = y1 + Math.sin(this.angle2) * this.length2;
-
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 5;
   ctx.beginPath();
   ctx.moveTo(this.x, this.y);
   ctx.lineTo(x1, y1);
@@ -120,6 +117,7 @@ Rig.prototype.move = function(x, y) {
   this.leg2.y+=y;
 }
 Rig.prototype.palladium = function() {
+  ctx.strokeStyle = "rgb(100, 100, 100)"
   this.arm1.draw();
   this.arm2.draw();
   this.leg1.draw();
@@ -148,7 +146,7 @@ Rig.prototype.palladium = function() {
       this.y - 40 + 160 * this.scaleFactor);
   this.leg2.update(this.x - 15 * this.scaleFactor, 
       this.y - 40 + 160 * this.scaleFactor);
-  ctx.strokeStyle = "black";
+  ctx.strokeStyle = "rgb(100, 100, 100)"
   ctx.lineWidth = 5;
   ctx.beginPath();
   ctx.moveTo(this.x + 5 * increase(this.face), this.y - 40);
@@ -161,6 +159,7 @@ Rig.prototype.palladium = function() {
   this.arm2.x = this.x + 5 * increase(this.face);
 }
 Rig.prototype.update = function() {
+    ctx.strokeStyle = "rgb(0, 0, 0)"
     this.arm1.draw();
     this.arm2.draw();
     this.leg1.draw();
@@ -276,8 +275,6 @@ Rig.prototype.keyControl = function() {
   }
 }
 
-let timings = [10]
-
 let rigs = [];
 let rig = new Rig(0.5);
 rig.move(-50, 100);
@@ -285,6 +282,10 @@ rigs.push(rig);
 
 function forest() {
 	
+}
+function house(x, y, s) {
+  ctx.filStyle = "rgb(148, 88, 4)";
+  ctx.fillRect(x, y, 200 * s, 150 * s)
 }
 function tree(x, y, s) {
   ctx.fillStyle = "rgb(158, 87, 5)"
@@ -295,6 +296,13 @@ function tree(x, y, s) {
   ctx.lineTo(x - 50 * s, y);
   ctx.lineTo(x + 50 * s, y);
   ctx.fill();
+}
+function docks() {
+  // ground + sky
+  ctx.fillStyle = "rgb(93, 226, 231)"
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgb(34, 204, 4)"
+  ctx.fillRect(0, canvas.height - 300, canvas.width, 300);
 }
 function troy() {
   // ground + sky
@@ -311,6 +319,15 @@ function troy() {
     ctx.fillRect(x, canvas.height - 515, 25, 15);
   }
   
+  // trees
+  tree(100, canvas.height - 280, 1);
+  tree(canvas.width - 90, canvas.height - 325, 0.8);
+}
+function temple() {
+  ctx.fillStyle = "rgb(200, 200, 200)"
+  ctx.fillRect(0, 0, canvas.width, canvas.height - 300);
+  ctx.fillStyle = "rgb(180, 180, 180)";
+  ctx.fillRect(0, canvas.height - 300, canvas.width, 300);
   // platform
   ctx.fillStyle = "rgb(170, 170, 170)"
   ctx.beginPath();
@@ -333,40 +350,61 @@ function troy() {
   ctx.lineTo(canvas.width/2 + 50, canvas.height - 50);
   ctx.lineTo(canvas.width/2 + 100, canvas.height - 150);
   ctx.fill();
-  
-  // trees
-  tree(100, canvas.height - 280, 1);
-  tree(canvas.width - 90, canvas.height - 325, 0.8);
 }
+
+let timings = [500, 1000];
 
 setInterval(function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if(timing <= timings[0]) {
-      	troy();
+      	temple();
       	rigs[0].palladium();
-    } else {
-      if(rigs.length < 2) {
+    } else if(timing <= timings[1]) {
+      if(rigs.length === 1) {
+        rigs = [];
         let rig = new Rig(1);
         rig.move(-canvas.width/2 - 300, 100);
         rig.steps = [
-          {x: canvas.width/2 - 200, y: canvas.height/2 + 100},
-          {x: canvas.width/2 - 200, y: canvas.height/2 + 200},
-          {x: canvas.width + 200, y: canvas.height/2 + 200},
+          {x: canvas.width + 200, y: canvas.height/2},
         ];
         rigs.push(rig);
         
         rig = new Rig(1);
         rig.move(-canvas.width/2 - 350, 100);
         rig.steps = [
-          {x: canvas.width/2 - 200, y: canvas.height/2 + 100},
-          {x: canvas.width/2 - 200, y: canvas.height/2},
-          {x: canvas.width + 200, y: canvas.height/2},
+          {x: canvas.width + 200, y: canvas.height/2 + 100},
         ];
         rigs.push(rig);
       }
     	troy();
-    	rigs[0].palladium();
+    	rigs[0].update();
+    	rigs[0].AI();
     	rigs[1].update();
+    	rigs[1].AI();
+    } else {
+      if(rigs.length === 2) {
+        rigs = [];
+        let rig = new Rig(0.5);
+        rig.move(-50, 100);
+        rigs.push(rig);
+        
+        rig = new Rig(1);
+        rig.move(-canvas.width/2 - 300, 100);
+        rig.steps = [
+          {x: canvas.width + 200, y: canvas.height/2},
+        ];
+        rigs.push(rig);
+        
+        rig = new Rig(1);
+        rig.move(-canvas.width/2 - 350, 100);
+        rig.steps = [
+          {x: canvas.width + 200, y: canvas.height/2 + 100},
+        ];
+        rigs.push(rig);
+      }
+      temple();
+      rigs[0].palladium();
+      rigs[1].update();
     	rigs[1].AI();
     	rigs[2].update();
     	rigs[2].AI();
