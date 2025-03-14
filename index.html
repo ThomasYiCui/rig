@@ -104,6 +104,31 @@ function Rig(sF) {
   this.face = 0.1;
   this.step = 0;
 }
+Rig.prototype.moveTo = function(x, y) {
+  let xDif = this.x;
+  let yDif = this.y;
+  this.x-=xDif;
+  this.y-=yDif;
+  this.arm1.x+=xDif;
+  this.arm1.y+=yDif;
+  this.arm2.x+=xDif;
+  this.arm2.y+=yDif;
+  this.leg1.x+=xDif;
+  this.leg1.y+=yDif;
+  this.leg2.x+=xDif;
+  this.leg2.y+=yDif;
+  
+  this.x+=x;
+  this.y+=y;
+  this.arm1.x+=x;
+  this.arm1.y+=y;
+  this.arm2.x+=x;
+  this.arm2.y+=y;
+  this.leg1.x+=x;
+  this.leg1.y+=y;
+  this.leg2.x+=x;
+  this.leg2.y+=y;
+}
 Rig.prototype.move = function(x, y) {
   this.x+=x;
   this.y+=y;
@@ -184,6 +209,9 @@ Rig.prototype.update = function() {
       this.leg1.update(this.x + 15 * increase(this.face) * this.scaleFactor, this.y - 40 + 160 * this.scaleFactor);
       this.leg2.update(this.x - 15 * increase(this.face) * this.scaleFactor, this.y - 40 + 160 * this.scaleFactor);
     }
+    if(this.hold) {
+      this.hold.moveTo(this.x + 20 * increase(this.face) * this.scaleFactor, this.y - 40 + 70 * this.scaleFactor)
+    }
   	ctx.strokeStyle = "black";
     ctx.lineWidth = 5;
     ctx.beginPath();
@@ -234,6 +262,16 @@ Rig.prototype.AI = function() {
     }
     moved = true;
     this.move(0, -2)
+  }
+  
+  if(this.steps[this.step].action) {
+    let action = this.steps[this.step].action;
+    if(action.type === "grab" && !moved) {
+      if(this.hold !== action.thing) {
+        moved = true;
+        this.hold = action.thing;
+      }
+    }
   }
   
   
@@ -328,7 +366,7 @@ function temple() {
   ctx.fillRect(0, 0, canvas.width, canvas.height - 300);
   ctx.fillStyle = "rgb(180, 180, 180)";
   ctx.fillRect(0, canvas.height - 300, canvas.width, 300);
-  // platform
+  // platform 5
   ctx.fillStyle = "rgb(170, 170, 170)"
   ctx.beginPath();
   ctx.moveTo(canvas.width/2 - 100, canvas.height - 200);
@@ -351,11 +389,21 @@ function temple() {
   ctx.lineTo(canvas.width/2 + 100, canvas.height - 150);
   ctx.fill();
 }
+function camp() {
+  ctx.fillStyle = "rgb(1, 47, 74)"
+  ctx.fillRect(0, 0, canvas.width, canvas.height - 300);
+  ctx.fillStyle = "rgb(11, 82, 0)";
+  ctx.fillRect(0, canvas.height - 500, canvas.width, 500);
+  ctx.fillStyle = "rgb(87, 48, 0";
+  ctx.fillRect(0, canvas.height - 150, canvas.width, 150);
+}
 
-let timings = [500, 1000];
+let timings = [400, 900, 1300];
 
 setInterval(function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    camp();
+    return;
     if(timing <= timings[0]) {
       	temple();
       	rigs[0].palladium();
@@ -381,7 +429,7 @@ setInterval(function() {
     	rigs[0].AI();
     	rigs[1].update();
     	rigs[1].AI();
-    } else {
+    } else if(timing <= timings[2]) {
       if(rigs.length === 2) {
         rigs = [];
         let rig = new Rig(0.5);
@@ -391,14 +439,16 @@ setInterval(function() {
         rig = new Rig(1);
         rig.move(-canvas.width/2 - 300, 100);
         rig.steps = [
-          {x: canvas.width + 200, y: canvas.height/2},
+          {x: canvas.width/2 - 100, y: canvas.height/2},
+          {x: -200, y: canvas.height/2},
         ];
         rigs.push(rig);
         
         rig = new Rig(1);
         rig.move(-canvas.width/2 - 350, 100);
         rig.steps = [
-          {x: canvas.width + 200, y: canvas.height/2 + 100},
+          {x: canvas.width/2 - 100, y: canvas.height/2 + 100, action: {type: "grab", thing: rigs[0]}},
+          {x: -200, y: canvas.height/2 + 100},
         ];
         rigs.push(rig);
       }
@@ -408,6 +458,21 @@ setInterval(function() {
     	rigs[1].AI();
     	rigs[2].update();
     	rigs[2].AI();
+    } else {
+      if(timing === timings[2] + 1) {
+        rigs[1].steps = [
+          {x: -200, y: canvas.height/2},
+        ];
+        rigs[2].steps = [
+          {x: -200, y: canvas.height/2 + 100},
+        ];
+      }
+        temple();
+        rigs[0].palladium();
+        rigs[1].update();
+    	  rigs[1].AI();
+    	  rigs[2].update();
+    	  rigs[2].AI();
     }
     timing+=1;
 }, 10);
